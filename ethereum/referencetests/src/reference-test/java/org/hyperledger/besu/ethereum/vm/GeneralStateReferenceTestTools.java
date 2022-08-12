@@ -61,7 +61,7 @@ public class GeneralStateReferenceTestTools {
         System.getProperty(
             "test.ethereum.state.eips",
             "Frontier,Homestead,EIP150,EIP158,Byzantium,Constantinople,ConstantinopleFix,Istanbul,Berlin,"
-                + "London,Shanghai,Cancun");
+                + "London,Shanghai,Cancun,eip1153,EIP1153");
     EIPS_TO_RUN = Arrays.asList(eips.split(","));
   }
 
@@ -91,8 +91,8 @@ public class GeneralStateReferenceTestTools {
     }
 
     // Known incorrect test.
-    params.ignore(
-        "RevertPrecompiledTouch(_storage)?-(EIP158|Byzantium|Constantinople|ConstantinopleFix)");
+    // params.ignore(
+       // "RevertPrecompiledTouch(_storage)?-(EIP158|Byzantium|Constantinople|ConstantinopleFix)");
 
     // Gas integer value is too large to construct a valid transaction.
     params.ignore("OverflowGasRequire");

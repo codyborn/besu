@@ -14,7 +14,7 @@
  */
 
 def blockchainReferenceTests = tasks.register("blockchainReferenceTests")  {
-  final referenceTestsPath = 'src/reference-test/external-resources/BlockchainTests'
+  final referenceTestsPath = 'src/reference-test/external-resources/BlockchainTests/bcEIP1153'
   final generatedTestsPath = "$buildDir/generated/sources/reference-test/$name/java"
   inputs.files fileTree(referenceTestsPath),
     fileTree(generatedTestsPath)
@@ -30,7 +30,7 @@ def blockchainReferenceTests = tasks.register("blockchainReferenceTests")  {
 }
 
 def generalstateReferenceTests = tasks.register("generalstateReferenceTests")  {
-  final referenceTestsPath = "src/reference-test/external-resources/GeneralStateTests"
+  final referenceTestsPath = "src/reference-test/external-resources/BlockchainTests/bcEIP1153"
   final generatedTestsPath = "$buildDir/generated/sources/reference-test/$name/java"
   inputs.files fileTree(referenceTestsPath),
     fileTree(generatedTestsPath)
@@ -65,9 +65,7 @@ sourceSets {
       compileClasspath += main.output
       runtimeClasspath += main.output
       srcDirs "src/reference-test/java",
-        blockchainReferenceTests,
-        generalstateReferenceTests,
-        generalstateRegressionReferenceTests
+        blockchainReferenceTests
     }
     resources {
       srcDirs 'src/reference-test/resources',
@@ -159,7 +157,9 @@ following commands:
     }
   }
 }
-processResources.dependsOn('validateReferenceTestSubmodule')
+// processResources.dependsOn('validateReferenceTestSubmodule')
+
+processResources.dependsOn('blockchainReferenceTests')
 
 def generateTestFiles(FileTree jsonPath, File templateFile, String pathstrip, String destination, String namePrefix, String ... excludedPath) {
   def pep = mkdir(destination)
@@ -167,8 +167,9 @@ def generateTestFiles(FileTree jsonPath, File templateFile, String pathstrip, St
 
   // This is how many json files to include in each test file
   def fileSets = jsonPath.getFiles().collate(5)
-
   fileSets.eachWithIndex { fileSet, idx ->
+
+    def include = false
     def paths = []
     fileSet.each { testJsonFile ->
       def parentFile = testJsonFile.getParentFile()
@@ -176,17 +177,20 @@ def generateTestFiles(FileTree jsonPath, File templateFile, String pathstrip, St
       if (!testJsonFile.getName().toString().startsWith(".") && !excludedPath.contains(parentPathFile)) {
         def pathFile = testJsonFile.getPath()
         paths << pathFile.substring(pathFile.indexOf(pathstrip))
+        if (testJsonFile.getPath().toString().contains("1153")) {
+          include = true
+        }
       }
     }
+    if (include) {
+      def testFile = file(destination + "/" + namePrefix + "_" + idx + ".java")
 
-    def testFile = file(destination + "/" + namePrefix + "_" + idx + ".java")
-
-
-    def allPaths = '"' + paths.join('", "') + '"'
-
-    def testFileContents = referenceTestTemplate
-      .replaceAll("%%TESTS_FILE%%", allPaths)
-      .replaceAll("%%TESTS_NAME%%", namePrefix + "_" + idx)
-    testFile.newWriter().withWriter { w -> w << testFileContents }
+      def allPaths = '"' + paths.join('", "') + '"'
+      allPaths = allPaths.replaceAll("\\\\", "\\\\\\\\\\\\\\\\")
+      def testFileContents = referenceTestTemplate
+              .replaceAll("%%TESTS_FILE%%", allPaths)
+              .replaceAll("%%TESTS_NAME%%", namePrefix + "_" + idx)
+      testFile.newWriter().withWriter { w -> w << testFileContents }
+    }
   }
 }
